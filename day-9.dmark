@@ -1,0 +1,113 @@
+h1. Advent of Code: Day 9: All in a Single Night: Literate programming solution
+
+p. Advent of Code Day 9 says the following:
+
+blockquote.
+  p. Every year, Santa manages to deliver all of his presents in a single night.
+
+  p. This year, however, he has some new locations to visit; his elves have provided him the distances between every pair of locations. He can start and end at any two (different) locations he wants, but he must visit each location exactly once. What is the %emph{shortest distance} he can travel to achieve this?
+
+  p. For example, given the following distances:
+
+  pre.
+    London to Dublin = 464
+    London to Belfast = 518
+    Dublin to Belfast = 141
+
+  p. The possible routes are therefore:
+
+  pre.
+    Dublin -> London -> Belfast = 982
+    London -> Dublin -> Belfast = 605
+    London -> Belfast -> Dublin = 659
+    Dublin -> Belfast -> London = 659
+    Belfast -> Dublin -> London = 605
+    Belfast -> London -> Dublin = 982
+
+  p. The shortest of these is %code{London -> Dublin -> Belfast = 605}, and so the answer is %code{605} in this example.
+
+  p. What is the distance of the shortest route?
+
+p. For the purposes of the example, let’s start of by writing down the input that we’ve got, the distances between each two cities, in a way that Ruby can handle it.
+
+pre[code].
+  sample_distances = {
+    ["London", "Dublin"].sort => 464,
+    ["London", "Belfast"].sort => 518,
+    ["Dublin", "Belfast"].sort => 141,
+  %}
+
+p. I’ve opted for using a hash, where the keys are pairs of city names, and the values are distances between the cities. The call to %code{#sort} ensures that the cities inside a key are stored alphabetically (because %code{["London", "Dublin"].sort} is the same as %code{["Dublin", "London"]}), which will become useful later when looking up distances.
+
+pre[code].
+  def length_of_shortest_path(distances)
+
+p. The question of Day 9 is to get the length of the shortest path, so I’ve defined a function that calculates exactly that. It has one argument, which is the distances that we’ve defined earlier (but you can also call it with other distances, if you’d want to).
+
+p. This function will do two things: find all possible paths, calculate the lengths of all of them, and then find the shortest one.
+
+pre[code].
+    all_paths = generate_paths(extract_cities(distances))
+
+p. This finds all possible paths. We haven’t defined either %code{#extract_cities} nor %code{#generate_paths}, but we’ll get to that later. %code{#extract_cities} gives a list of all cities, given the distances, and %code{#generate_paths} will generate every single possible path given a list of cities.
+
+pre[code].
+    all_paths
+      .map { |path| length_of(path, distances) %}
+      .min
+  end
+
+p. Here, we map the paths onto their lengths using the %code{#length_of} function (which we haven’t defined yet). Once we have all lengths, we take the shortest one by calling %code{#min} (minimum).
+
+p. Time to define %code{#extract_cities}:
+
+pre[code].
+  def extract_cities(distances)
+    distances.keys.flatten.uniq
+  end
+
+p. The %code{#extract_cities} function does three things:
+
+ol.
+  li.
+    p. First, it gets the array of keys using the %code{keys} method, which will return %code{[["London", "Dublin"], ["London", "Belfast"], ["Dublin", "Belfast"]]} in our example.
+  li.
+    p. The %code{flatten} method will turn this array of arrays into a single array and will return %code{["London", "Dublin", "London", "Belfast", "Dublin", "Belfast"]}.
+  li.
+    p. Lastly, the %code{#uniq} method will return an array with only unique elements, and will thus return %code{["London", "Dublin", "Belfast"]}—the list of cities that we wanted.
+
+p. Moving on to %code{#generate_paths}, which returns all possible paths given a list of cities.
+
+pre[code].
+  def generate_paths(cities)
+    cities.permutation
+  end
+
+p. OK, maybe that’s cheating; Ruby has a %code{#permutation} method, which returns all permutations of an array. Easy!
+
+p. The only function that we haven’t implemented yet is %code{#length_of}, wich, given a path and a list of distances, returns the length of that path:
+
+pre[code].
+  def length_of(path, distances)
+    path
+      .each_cons(2)
+      .map { |pair| distances[pair.sort] %}
+      .reduce(:+)
+  end
+
+p. This function does three things:
+
+ol.
+  li.
+    p. It takes the path and returns a collection of every single consecutive pair using %code{#each_cons}. For example, %code{["London", "Dublin", "Belfast"].each_cons(2)} returns something like %code{[["London", "Dublin"], ["Dublin", "Belfast"]]}. The argument %code{2} indicates that we want each pair; we could also ask for each consecutive triple by passing in %code{3} rather than %code{2}.
+  li.
+    p. It maps, with the %code{#map} function, each of those pairs onto the distance between them. The distance between two cities is easy to look up, because the %code{distances} we defined at the beginning stores the distances per pair. We need to call %code{#sort} here because we know that our %code{distances} stores the keys sorted alphabetically.
+  li.
+    p. Now that we have an array of lengths, we sum them together with a call to %code{reduce}. You can think of %code{reduce} as joining all elements of an array with an operation. In this case, because the operation is %code{:+}, the expression %code{[3, 6, 5].reduce(:+)} returns %code{3 + 6 + 5}, or %code{14}.
+
+p. Now that we have everything defined, we can call the function we defined initially, and pass in our list of distances:
+
+pre[code].
+  puts length_of_shortest_path(sample_distances)
+
+p. That prints 605, as expected.
